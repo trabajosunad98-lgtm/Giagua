@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prototipo - Gestión Inteligente del Agua</title>
+<style>
+:root{--navy:#17324d;--blue:#2878a8;--bg:#f3f6f8;--line:#dbe3e8;--ink:#1f2933;--muted:#60717f;--green:#21865b;--amber:#b7791f;--red:#b33b3b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:15px/1.45 Arial,sans-serif;color:var(--ink)}
+header{background:var(--navy);color:white;padding:22px 5vw}header h1{margin:0 0 5px;font-size:24px}header p{margin:0;color:#dce8ef}
+main{max-width:1180px;margin:24px auto;padding:0 18px}.notice{background:#fff5d9;border:1px solid #e8d49a;padding:12px 15px;border-radius:9px;margin-bottom:18px;color:#664d16}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.card{background:white;border:1px solid var(--line);border-radius:10px;padding:16px;box-shadow:0 2px 8px #18344a0a}.metric small{color:var(--muted);display:block}.metric strong{font-size:26px;display:block;margin-top:5px}.section{margin-top:18px}.section h2{font-size:18px;color:var(--navy);margin:0 0 10px}
+table{border-collapse:collapse;width:100%;background:white;border-radius:9px;overflow:hidden}th,td{padding:11px 12px;border-bottom:1px solid var(--line);text-align:left}th{background:#eaf0f4;color:var(--navy)}tr:last-child td{border-bottom:0}
+.status{font-weight:bold}.ok{color:var(--green)}.warn{color:var(--amber)}.bad{color:var(--red)}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}button{border:0;border-radius:7px;padding:10px 14px;background:var(--blue);color:white;font-weight:bold;cursor:pointer}button.secondary{background:#526675}button.danger{background:var(--red)}
+.alert{border-left:4px solid var(--amber);padding:10px 12px;background:#fff9ed;margin:8px 0;border-radius:5px}.muted{color:var(--muted);font-size:13px}
+@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:480px){.grid{grid-template-columns:1fr}table{font-size:13px}th,td{padding:8px}}
+</style></head><body>
+<header><h1>Gestión Inteligente del Agua</h1><p>Prototipo de baja fidelidad · Instituciones educativas de Duitama, Boyacá</p></header>
+<main>
+<div class="notice"><b>Nota:</b> los valores de esta interfaz son de demostración y permiten visualizar el flujo de monitoreo. No hay conexión con sensores, medidores ni instalaciones reales.</div>
+<div class="grid">
+<div class="card metric"><small>Puntos instrumentados (escenario)</small><strong id="points">8</strong></div>
+<div class="card metric"><small>Lecturas recibidas (escenario)</small><strong id="received">2.280</strong></div>
+<div class="card metric"><small>Disponibilidad simulada</small><strong id="availability">98,96%</strong></div>
+<div class="card metric"><small>Alertas abiertas</small><strong id="openAlerts">2</strong></div>
+</div>
+<div class="section card"><h2>Estado de puntos de medición</h2><p class="muted">Lecturas de demostración expresadas como caudal ilustrativo (L/min). Los umbrales deben calibrarse con datos de campo.</p>
+<table><thead><tr><th>Punto</th><th>Ubicación de ejemplo</th><th>Lectura simulada</th><th>Umbral</th><th>Estado</th></tr></thead><tbody id="sensorRows"></tbody></table>
+<div class="controls"><button onclick="addNormal()">Simular lectura normal</button><button class="danger" onclick="addAnomaly()">Simular anomalía</button><button class="secondary" onclick="resetDemo()">Restablecer escenario</button></div></div>
+<div class="section grid" style="grid-template-columns:1.2fr 1fr">
+<div class="card"><h2>Indicadores de desempeño</h2><table><tbody>
+<tr><td>Integridad de datos</td><td><b>98,68%</b></td></tr><tr><td>Entrega de alertas</td><td><b>95,00%</b></td></tr><tr><td>Tiempo de notificación</td><td><b>3,2 min</b></td></tr><tr><td>Uso de almacenamiento</td><td><b>45,00%</b></td></tr><tr><td>Tiempo de consulta</td><td><b>2,8 s</b></td></tr><tr><td>Atención de alertas</td><td><b>90,00%</b></td></tr>
+</tbody></table></div>
+<div class="card"><h2>Registro de eventos</h2><div id="events">
+<div class="alert"><b>Alerta demostrativa · Punto 04</b><br>Consumo por encima del umbral configurado. Requiere inspección física.</div>
+<div class="alert"><b>Alerta demostrativa · Punto 07</b><br>Variación anormal simulada. No equivale a fuga confirmada.</div>
+</div><p class="muted">Una alerta indica una posible anomalía. La confirmación requiere inspección del punto de consumo.</p></div>
+</div>
+<div class="section card"><h2>Flujo representado</h2><p>Punto de consumo → sensor/medidor → unidad de adquisición → comunicación → base de datos → análisis de umbrales → panel y alertas → revisión por mantenimiento.</p><p class="muted">La arquitectura final deberá definirse según inspección hidráulica, fichas técnicas, cobertura, alimentación eléctrica, seguridad y costos.</p></div>
+</main>
+<script>
+const initial=[
+["P01","Baños bloque A",0.42,1.20],["P02","Lavamanos bloque A",0.31,0.90],["P03","Cafetería",0.78,1.50],["P04","Baños bloque B",1.62,1.20],
+["P05","Zona deportiva",0.55,1.40],["P06","Aseo",0.66,1.30],["P07","Bebederos",1.18,0.90],["P08","Jardinería",0.44,1.00]];
+let data=JSON.parse(JSON.stringify(initial)),eventCount=2;
+function fmt(x){return x.toFixed(2).replace(".",",")}
+function render(){
+ const body=document.getElementById("sensorRows");body.innerHTML="";
+ data.forEach((r,i)=>{let abnormal=r[2]>r[3];let tr=document.createElement("tr");
+ tr.innerHTML=`<td>${r[0]}</td><td>${r[1]}</td><td>${fmt(r[2])} L/min</td><td>${fmt(r[3])} L/min</td><td class="status ${abnormal?'bad':'ok'}">${abnormal?'Revisar':'Normal'}</td>`;body.appendChild(tr)});
+ document.getElementById("openAlerts").textContent=data.filter(r=>r[2]>r[3]).length;
+}
+function addNormal(){let i=Math.floor(Math.random()*data.length);data[i][2]=Math.max(0.15,data[i][3]*0.55);log(`Lectura normal simulada en ${data[i][0]}.`);render()}
+function addAnomaly(){let i=Math.floor(Math.random()*data.length);data[i][2]=data[i][3]*1.45;log(`Alerta simulada en ${data[i][0]}: lectura superior al umbral. Verificar físicamente.`);render()}
+function log(t){let e=document.createElement("div");e.className="alert";e.textContent=t;document.getElementById("events").prepend(e)}
+function resetDemo(){data=JSON.parse(JSON.stringify(initial));document.getElementById("events").innerHTML='<div class="alert"><b>Escenario restablecido.</b><br>Se cargaron nuevamente los valores de demostración.</div>';render()}
+render();
+</script></body></html>
